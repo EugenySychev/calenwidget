@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="all_day">Весь день</string>
+    <string name="no_event_for_today">Нет событий на сегодня</string>
+</resources>

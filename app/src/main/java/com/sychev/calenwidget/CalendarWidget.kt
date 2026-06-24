@@ -3,6 +3,7 @@ package com.sychev.calenwidget
 import android.content.Context
 import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -57,7 +58,7 @@ private fun WidgetContent(events: List<CalendarEvent>) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Нет событий на сегодня",
+                    text = stringResource(R.string.no_event_for_today),
                     style = TextStyle(fontSize = 12.sp)
                 )
             }
@@ -74,7 +75,7 @@ private fun WidgetContent(events: List<CalendarEvent>) {
 @Composable
 private fun EventRow(event: CalendarEvent) {
     val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
-    val timeStr = if (event.allDay) "Весь день"
+    val timeStr = if (event.allDay) stringResource(R.string.all_day)
     else "${timeFmt.format(Date(event.startTime))} – ${timeFmt.format(Date(event.endTime))}"
 
     Row(
