@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">calenwidget</string>
+    <string name="widget_description">Tasks</string>
 </resources>
