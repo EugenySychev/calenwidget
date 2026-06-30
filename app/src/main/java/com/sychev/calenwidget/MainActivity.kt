@@ -1,6 +1,8 @@
 package com.sychev.calenwidget
 
 import android.Manifest
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -58,7 +60,11 @@ class MainActivity : ComponentActivity() {
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         if (calendarPermissionGranted) {
-                            Text("Доступ к календарю разрешён. Добавьте виджет на рабочий стол.")
+                            Text("Доступ к календарю разрешён.")
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(onClick = { pinWidget() }) {
+                                Text("Добавить виджет на рабочий стол")
+                            }
                         } else {
                             Text("Для работы виджета необходим доступ к календарю.")
                             Spacer(modifier = Modifier.height(16.dp))
@@ -72,5 +78,13 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun pinWidget() {
+        val appWidgetManager = AppWidgetManager.getInstance(this)
+        if (!appWidgetManager.isRequestPinAppWidgetSupported) return
+
+        val provider = ComponentName(this, CalendarWidgetReceiver::class.java)
+        appWidgetManager.requestPinAppWidget(provider, null, null)
     }
 }

@@ -3,11 +3,11 @@ package com.sychev.calenwidget
 import android.content.Context
 import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.LocalContext
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.lazy.LazyColumn
@@ -39,6 +39,7 @@ class CalendarWidget : GlanceAppWidget() {
 
 @Composable
 private fun WidgetContent(events: List<CalendarEvent>) {
+    val context = LocalContext.current
     val dayStr = DateFormat.format("EEE, d MMM", Calendar.getInstance().time).toString()
 
     Column(
@@ -58,7 +59,7 @@ private fun WidgetContent(events: List<CalendarEvent>) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = stringResource(R.string.no_event_for_today),
+                    text = context.getString(R.string.no_event_for_today),
                     style = TextStyle(fontSize = 12.sp)
                 )
             }
@@ -74,8 +75,9 @@ private fun WidgetContent(events: List<CalendarEvent>) {
 
 @Composable
 private fun EventRow(event: CalendarEvent) {
+    val context = LocalContext.current
     val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
-    val timeStr = if (event.allDay) stringResource(R.string.all_day)
+    val timeStr = if (event.allDay) context.getString(R.string.all_day)
     else "${timeFmt.format(Date(event.startTime))} – ${timeFmt.format(Date(event.endTime))}"
 
     Row(
