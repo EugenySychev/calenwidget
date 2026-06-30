@@ -12,6 +12,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+        android:name=".CalenwidgetApplication"
         android:theme="@style/Theme.Calenwidget">
         <activity
             android:name=".MainActivity"

@@ -36,21 +36,25 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-
 const val LOG = "Widget"
+
+private sealed interface WidgetListItem {
+    data class DateHeader(val date: Date) : WidgetListItem
+    data class EventItem(val event: CalendarEvent) : WidgetListItem
+}
 
 class CalendarWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val events = CalendarRepository.getTodayEvents(context)
+        val events = CalenwidgetApplication.instance.calendarRepository.getEvents()
         val bgAlpha = WidgetPrefs.getBackgroundAlpha(context)
         val bgColorArgb = WidgetPrefs.getBackgroundColor(context)
         val textColorArgb = WidgetPrefs.getTextColor(context)
+        val fontSize = WidgetPrefs.getFontSize(context)
         provideContent {
-            WidgetContent(events, bgAlpha, bgColorArgb, textColorArgb)
+            WidgetContent(events, bgAlpha, bgColorArgb, textColorArgb, fontSize)
         }
     }
 }
@@ -71,12 +75,12 @@ private fun WidgetContent(
     events: List<CalendarEvent>,
     bgAlpha: Float,
     bgColorArgb: Int,
-    textColorArgb: Int
+    textColorArgb: Int,
+    fontSize: Int,
 ) {
     val context = LocalContext.current
     val textColor = ColorProvider(Color(textColorArgb))
     val bgColor = Color(bgColorArgb).copy(alpha = bgAlpha)
-    val dayStr = DateFormat.format("EEE, d MMM", Calendar.getInstance().time).toString()
 
     Column(
         modifier = GlanceModifier
@@ -85,11 +89,6 @@ private fun WidgetContent(
             .clickable(actionRunCallback<UpdateWidgetAction>())
             .padding(8.dp)
     ) {
-        Text(
-            text = dayStr,
-            style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold, color = textColor),
-            modifier = GlanceModifier.padding(bottom = 6.dp)
-        )
         if (events.isEmpty()) {
             Box(
                 modifier = GlanceModifier.fillMaxSize(),
@@ -97,13 +96,33 @@ private fun WidgetContent(
             ) {
                 Text(
                     text = context.getString(R.string.no_event_for_today),
-                    style = TextStyle(fontSize = 12.sp, color = textColor)
+                    style = TextStyle(fontSize = fontSize.sp, color = textColor)
                 )
             }
         } else {
+            val listItems = events
+                .groupBy { it.date }
+                .flatMap { (date, group) ->
+                    listOf(WidgetListItem.DateHeader(date)) +
+                            group.map { WidgetListItem.EventItem(it) }
+                }
+
             LazyColumn(modifier = GlanceModifier.fillMaxSize()) {
-                items(events, itemId = { it.id }) { event ->
-                    EventRow(event, textColor)
+                items(
+                    items = listItems,
+                    itemId = { item ->
+                        when (item) {
+                            is WidgetListItem.DateHeader -> item.date.time
+                            is WidgetListItem.EventItem -> item.event.id
+                        }
+                    }
+                ) { item ->
+                    when (item) {
+                        is WidgetListItem.DateHeader ->
+                            DateGroupHeader(item.date, textColor, fontSize)
+                        is WidgetListItem.EventItem ->
+                            EventRow(item.event, textColor, fontSize)
+                    }
                 }
             }
         }
@@ -111,13 +130,35 @@ private fun WidgetContent(
 }
 
 @Composable
-private fun EventRow(event: CalendarEvent, textColor: ColorProvider) {
+private fun DateGroupHeader(date: Date, textColor: ColorProvider, fontSize: Int) {
+    val context = LocalContext.current
+    val openAppIntent = Intent(context, MainActivity::class.java)
+        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+
+    Text(
+        text = DateFormat.format("d MMM, EEE", date).toString(),
+        style = TextStyle(
+            fontSize = (fontSize + 1).sp,
+            fontWeight = FontWeight.Bold,
+            color = textColor
+        ),
+        modifier = GlanceModifier
+            .padding(top = 6.dp, bottom = 2.dp)
+            .clickable(actionStartActivity(openAppIntent))
+    )
+}
+
+@Composable
+private fun EventRow(event: CalendarEvent, textColor: ColorProvider, fontSize: Int) {
     val context = LocalContext.current
     val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
     val timeStr = if (event.allDay) context.getString(R.string.all_day)
     else "${timeFmt.format(Date(event.startTime))} – ${timeFmt.format(Date(event.endTime))}"
 
-    val eventUri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, event.id)
+    val eventUri = ContentUris.withAppendedId(
+        CalendarContract.Events.CONTENT_URI,
+        event.id,
+    )
     val openIntent = Intent(Intent.ACTION_VIEW)
         .setData(eventUri)
         .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -131,12 +172,16 @@ private fun EventRow(event: CalendarEvent, textColor: ColorProvider) {
     ) {
         Text(
             text = timeStr,
-            style = TextStyle(fontSize = 11.sp, color = textColor),
+            style = TextStyle(fontSize = (fontSize - 1).sp, color = textColor),
             modifier = GlanceModifier.padding(end = 8.dp)
         )
         Text(
             text = event.title,
-            style = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = textColor)
+            style = TextStyle(
+                fontSize = fontSize.sp,
+                fontWeight = FontWeight.Bold,
+                color = textColor,
+            )
         )
     }
 }

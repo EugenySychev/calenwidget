@@ -1,6 +1,15 @@
 <resources>
     <string name="app_name" translatable="false">calenwidget</string>
-    <string name="widget_description" translatable="false">Tasks</string>
+    <string name="widget_description" translatable="false">Calendar widget</string>
     <string name="all_day">All day</string>
     <string name="no_event_for_today">No events for today</string>
+    <string name="calendar_access_granted">Calendar access is granted.</string>
+    <string name="add_widget">Add widget to home screen</string>
+    <string name="widget_settings">Widget settings</string>
+    <string name="bg_color_label">Background color:</string>
+    <string name="bg_alpha_label">Background opacity: %d%%</string>
+    <string name="font_size_label">Font size: %d</string>
+    <string name="text_color_label">Text color:</string>
+    <string name="calendar_permission_required">Calendar access is required for the widget to work.</string>
+    <string name="allow_access">Allow access</string>
 </resources>

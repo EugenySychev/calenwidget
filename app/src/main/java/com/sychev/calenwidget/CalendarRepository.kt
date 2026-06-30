@@ -5,8 +5,9 @@ import android.content.Context
 import android.provider.CalendarContract
 import java.util.Calendar
 
-object CalendarRepository {
+class CalendarRepository(private val context: Context) {
 
+    private val MAX_EVENTS_COUNT = 10
     private val PROJECTION = arrayOf(
         CalendarContract.Instances.EVENT_ID,
         CalendarContract.Instances.TITLE,
@@ -16,7 +17,7 @@ object CalendarRepository {
         CalendarContract.Instances.CALENDAR_COLOR
     )
 
-    fun getTodayEvents(context: Context): List<CalendarEvent> {
+    fun getEvents(): List<CalendarEvent> {
         val cal = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
@@ -25,6 +26,7 @@ object CalendarRepository {
         }
         val startOfDay = cal.timeInMillis
         cal.apply {
+            add(Calendar.YEAR, 1)
             set(Calendar.HOUR_OF_DAY, 23)
             set(Calendar.MINUTE, 59)
             set(Calendar.SECOND, 59)
@@ -49,7 +51,18 @@ object CalendarRepository {
                 val end = it.getLong(3)
                 val allDay = it.getInt(4) == 1
                 val color = it.getInt(5)
-                events.add(CalendarEvent(id, title, begin, end, allDay, color))
+                val date = Calendar.getInstance().run {
+                    timeInMillis = begin
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                    time
+                }
+                events.add(CalendarEvent(id, title, date, begin, end, allDay, color))
+                if (events.size >= MAX_EVENTS_COUNT) {
+                    return events
+                }
             }
         }
         return events

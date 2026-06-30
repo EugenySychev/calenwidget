@@ -2,4 +2,13 @@
 <resources>
     <string name="all_day">Весь день</string>
     <string name="no_event_for_today">Нет событий на сегодня</string>
+    <string name="calendar_access_granted">Доступ к календарю разрешён.</string>
+    <string name="add_widget">Добавить виджет на рабочий стол</string>
+    <string name="widget_settings">Настройки виджета</string>
+    <string name="bg_color_label">Цвет фона:</string>
+    <string name="bg_alpha_label">Прозрачность фона: %d%%</string>
+    <string name="font_size_label">Размер шрифта: %d</string>
+    <string name="text_color_label">Цвет текста:</string>
+    <string name="calendar_permission_required">Для работы виджета необходим доступ к календарю.</string>
+    <string name="allow_access">Разрешить доступ</string>
 </resources>
