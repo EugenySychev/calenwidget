@@ -63,7 +63,10 @@ class CalendarWidget : GlanceAppWidget() {
             context.applicationContext,
             CalendarWidgetEntryPoint::class.java
         ).calendarRepository()
+        val visibleCalendarIds = calendarRepository.getCalendars().map { it.id }.toSet()
         val events = calendarRepository.getEvents()
+            .filter { it.calendarId in visibleCalendarIds }
+            .take(CalendarRepository.MAX_EVENTS_COUNT)
         val bgAlpha = WidgetPrefs.getBackgroundAlpha(context)
         val bgColorArgb = WidgetPrefs.getBackgroundColor(context)
         val textColorArgb = WidgetPrefs.getTextColor(context)

@@ -11,15 +11,48 @@ import javax.inject.Singleton
 @Singleton
 class CalendarRepository @Inject constructor(@ApplicationContext private val context: Context) {
 
-    private val MAX_EVENTS_COUNT = 10
+    companion object {
+        const val MAX_EVENTS_COUNT = 10
+    }
+
+    private val FETCH_LIMIT = MAX_EVENTS_COUNT * 5
     private val PROJECTION = arrayOf(
         CalendarContract.Instances.EVENT_ID,
         CalendarContract.Instances.TITLE,
         CalendarContract.Instances.BEGIN,
         CalendarContract.Instances.END,
         CalendarContract.Instances.ALL_DAY,
-        CalendarContract.Instances.CALENDAR_COLOR
+        CalendarContract.Instances.CALENDAR_COLOR,
+        CalendarContract.Instances.CALENDAR_ID
     )
+    private val CALENDARS_PROJECTION = arrayOf(
+        CalendarContract.Calendars._ID,
+        CalendarContract.Calendars.CALENDAR_DISPLAY_NAME,
+        CalendarContract.Calendars.ACCOUNT_NAME,
+        CalendarContract.Calendars.CALENDAR_COLOR
+    )
+
+    fun getCalendars(): List<CalendarInfo> {
+        val calendars = mutableListOf<CalendarInfo>()
+        val cursor = context.contentResolver.query(
+            CalendarContract.Calendars.CONTENT_URI,
+            CALENDARS_PROJECTION,
+            "${CalendarContract.Calendars.VISIBLE} = 1",
+            null,
+            null
+        ) ?: return calendars
+
+        cursor.use {
+            while (it.moveToNext()) {
+                val id = it.getLong(0)
+                val displayName = it.getString(1) ?: continue
+                val accountName = it.getString(2) ?: ""
+                val color = it.getInt(3)
+                calendars.add(CalendarInfo(id, displayName, accountName, color))
+            }
+        }
+        return calendars
+    }
 
     fun getEvents(): List<CalendarEvent> {
         val cal = Calendar.getInstance().apply {
@@ -55,6 +88,7 @@ class CalendarRepository @Inject constructor(@ApplicationContext private val con
                 val end = it.getLong(3)
                 val allDay = it.getInt(4) == 1
                 val color = it.getInt(5)
+                val calendarId = it.getLong(6)
                 val date = Calendar.getInstance().run {
                     timeInMillis = begin
                     set(Calendar.HOUR_OF_DAY, 0)
@@ -63,8 +97,8 @@ class CalendarRepository @Inject constructor(@ApplicationContext private val con
                     set(Calendar.MILLISECOND, 0)
                     time
                 }
-                events.add(CalendarEvent(id, title, date, begin, end, allDay, color))
-                if (events.size >= MAX_EVENTS_COUNT) {
+                events.add(CalendarEvent(id, title, date, begin, end, allDay, color, calendarId))
+                if (events.size >= FETCH_LIMIT) {
                     return events
                 }
             }

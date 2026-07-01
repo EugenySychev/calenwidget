@@ -3,12 +3,15 @@ package com.sychev.calenwidget
 import android.content.Context
 import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 object WidgetPrefs {
     private const val PREFS_NAME = "widget_prefs"
     private const val KEY_BG_ALPHA = "bg_alpha"
     private const val KEY_TEXT_COLOR = "text_color"
-    private const val KEY_FONT_SIZE = "font size"
+    private const val KEY_FONT_SIZE = "font_size"
+    private const val KEY_SELECTED_CALENDARS = "selected_calendars"
 
     fun getBackgroundAlpha(context: Context): Float =
         context
@@ -60,4 +63,19 @@ object WidgetPrefs {
     }
 
     private const val KEY_BG_COLOR = "bg_color"
+
+    fun getSelectedCalendars(context: Context): Set<CalendarInfo> {
+        val json = context
+            .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(KEY_SELECTED_CALENDARS, null) ?: return emptySet()
+        return Json.decodeFromString(json)
+    }
+
+    fun setSelectedCalendars(context: Context, calendars: Set<CalendarInfo>) {
+        context
+            .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit {
+                putString(KEY_SELECTED_CALENDARS, Json.encodeToString(calendars))
+            }
+    }
 }

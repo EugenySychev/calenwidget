@@ -9,6 +9,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,9 +25,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
@@ -42,6 +47,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -129,6 +136,7 @@ class MainActivity : ComponentActivity() {
     private fun WidgetSettings() {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
+        var isExpanded by remember { mutableStateOf(false) }
 
         var fontSize by remember { mutableIntStateOf(WidgetPrefs.getFontSize(context))}
         var bgAlpha by remember { mutableFloatStateOf(WidgetPrefs.getBackgroundAlpha(context)) }
@@ -160,99 +168,135 @@ class MainActivity : ComponentActivity() {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = stringResource(R.string.widget_settings),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = stringResource(R.string.bg_color_label),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                presetBgColors.forEach { color ->
-                    val isSelected = bgColorArgb == color.toArgb()
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(color, CircleShape)
-                            .border(
-                                width = 2.dp,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary
-                                else Color.Gray.copy(alpha = 0.4f),
-                                shape = CircleShape
-                            )
-                            .clickable {
-                                bgColorArgb = color.toArgb()
-                                WidgetPrefs.setBackgroundColor(context, color.toArgb())
-                                scope.launch { CalendarWidget().updateAll(context) }
-                            }
-                    )
-                }
+            val titleStyle = MaterialTheme.typography.titleMedium
+            val iconSize = with(LocalDensity.current) { titleStyle.fontSize.toDp() }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.widget_settings),
+                    style = titleStyle,
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Icon(
+                    painter = painterResource(
+                        id = if (isExpanded) {
+                            R.drawable.up_arrow
+                        } else {
+                            R.drawable.down_arrow
+                        },
+                    ),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(iconSize)
+                        .clickable {
+                            isExpanded = !isExpanded
+                        },
+                )
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = stringResource(R.string.bg_alpha_label, (bgAlpha * 100).roundToInt()),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Slider(
-                value = bgAlpha,
-                onValueChange = { bgAlpha = it },
-                onValueChangeFinished = {
-                    WidgetPrefs.setBackgroundAlpha(context, bgAlpha)
-                    scope.launch { CalendarWidget().updateAll(context) }
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = stringResource(R.string.font_size_label, fontSize),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Slider(
-                value = fontSize.toFloat() / 100,
-                valueRange = fontSizesRange,
-                steps = fontSizesSteps.toInt(),
-                onValueChange = { fontSize = (it * 100).toInt() },
-                onValueChangeFinished = {
-                    WidgetPrefs.setFontSize(context, fontSize)
-                    scope.launch { CalendarWidget().updateAll(context) }
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = stringResource(R.string.text_color_label),
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = expandVertically(),
+                exit = shrinkVertically(),
             ) {
-                presetColors.forEach { color ->
-                    val isSelected = textColorArgb == color.toArgb()
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(color, CircleShape)
-                            .border(
-                                width = 2.dp,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary
-                                else Color.Gray.copy(alpha = 0.4f),
-                                shape = CircleShape
-                            )
-                            .clickable {
-                                textColorArgb = color.toArgb()
-                                WidgetPrefs.setTextColor(context, color.toArgb())
-                                scope.launch { CalendarWidget().updateAll(context) }
-                            }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = stringResource(R.string.bg_color_label),
+                        modifier = Modifier.fillMaxWidth()
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        presetBgColors.forEach { color ->
+                            val isSelected = bgColorArgb == color.toArgb()
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(color, CircleShape)
+                                    .border(
+                                        width = 2.dp,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary
+                                        else Color.Gray.copy(alpha = 0.4f),
+                                        shape = CircleShape
+                                    )
+                                    .clickable {
+                                        bgColorArgb = color.toArgb()
+                                        WidgetPrefs.setBackgroundColor(context, color.toArgb())
+                                        scope.launch { CalendarWidget().updateAll(context) }
+                                    }
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(
+                            R.string.bg_alpha_label,
+                            (bgAlpha * 100).roundToInt()
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Slider(
+                        value = bgAlpha,
+                        onValueChange = { bgAlpha = it },
+                        onValueChangeFinished = {
+                            WidgetPrefs.setBackgroundAlpha(context, bgAlpha)
+                            scope.launch { CalendarWidget().updateAll(context) }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(R.string.font_size_label, fontSize),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Slider(
+                        value = fontSize.toFloat() / 100,
+                        valueRange = fontSizesRange,
+                        steps = fontSizesSteps.toInt(),
+                        onValueChange = { fontSize = (it * 100).toInt() },
+                        onValueChangeFinished = {
+                            WidgetPrefs.setFontSize(context, fontSize)
+                            scope.launch { CalendarWidget().updateAll(context) }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = stringResource(R.string.text_color_label),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        presetColors.forEach { color ->
+                            val isSelected = textColorArgb == color.toArgb()
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(color, CircleShape)
+                                    .border(
+                                        width = 2.dp,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary
+                                        else Color.Gray.copy(alpha = 0.4f),
+                                        shape = CircleShape
+                                    )
+                                    .clickable {
+                                        textColorArgb = color.toArgb()
+                                        WidgetPrefs.setTextColor(context, color.toArgb())
+                                        scope.launch { CalendarWidget().updateAll(context) }
+                                    }
+                            )
+                        }
+                    }
                 }
             }
         }
