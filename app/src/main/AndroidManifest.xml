@@ -15,7 +15,7 @@
         android:name=".CalenwidgetApplication"
         android:theme="@style/Theme.Calenwidget">
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.main.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.Calenwidget">

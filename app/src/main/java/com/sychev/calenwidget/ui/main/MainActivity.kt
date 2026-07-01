@@ -1,4 +1,4 @@
-package com.sychev.calenwidget
+package com.sychev.calenwidget.ui.main
 
 import android.Manifest
 import android.appwidget.AppWidgetManager
@@ -9,6 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -48,11 +49,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.glance.appwidget.updateAll
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.sychev.calenwidget.CalendarWidget
+import com.sychev.calenwidget.CalendarWidgetReceiver
+import com.sychev.calenwidget.R
+import com.sychev.calenwidget.WidgetPrefs
 import com.sychev.calenwidget.ui.theme.CalenwidgetTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -68,6 +75,8 @@ class MainActivity : ComponentActivity() {
             calendarPermissionGranted = granted
         }
 
+    private val viewModel: MainActivityViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -81,6 +90,7 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         setContent {
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
             CalenwidgetTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Column(
@@ -92,16 +102,29 @@ class MainActivity : ComponentActivity() {
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         if (calendarPermissionGranted) {
-                            WidgetSettings()
-
-                            Spacer(modifier = Modifier.height(24.dp))
+                            WidgetSettings(uiState.widgetParams)
+                            Spacer(
+                                modifier = Modifier
+                                    .height(
+                                        dimensionResource(R.dimen.spacer_height),
+                                    ),
+                            )
                             HorizontalDivider()
-                            Spacer(modifier = Modifier.height(20.dp))
-
+                            Spacer(
+                                modifier = Modifier
+                                    .height(
+                                        dimensionResource(R.dimen.spacer_height),
+                                    ),
+                            )
                             WidgetPlacing()
                         } else {
                             Text(stringResource(R.string.calendar_permission_required))
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(
+                                modifier = Modifier
+                                    .height(
+                                        dimensionResource(R.dimen.spacer_height),
+                                    ),
+                            )
                             Button(onClick = {
                                 requestPermissionLauncher.launch(Manifest.permission.READ_CALENDAR)
                             }) {
@@ -133,7 +156,9 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun WidgetSettings() {
+    private fun WidgetSettings(
+        widgetParams: WidgetParams,
+    ) {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
         var isExpanded by remember { mutableStateOf(false) }
