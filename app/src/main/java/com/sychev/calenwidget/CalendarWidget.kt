@@ -35,6 +35,10 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -46,9 +50,20 @@ private sealed interface WidgetListItem {
     data class EventItem(val event: CalendarEvent) : WidgetListItem
 }
 
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+private interface CalendarWidgetEntryPoint {
+    fun calendarRepository(): CalendarRepository
+}
+
 class CalendarWidget : GlanceAppWidget() {
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val events = CalenwidgetApplication.instance.calendarRepository.getEvents()
+        val calendarRepository = EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            CalendarWidgetEntryPoint::class.java
+        ).calendarRepository()
+        val events = calendarRepository.getEvents()
         val bgAlpha = WidgetPrefs.getBackgroundAlpha(context)
         val bgColorArgb = WidgetPrefs.getBackgroundColor(context)
         val textColorArgb = WidgetPrefs.getTextColor(context)

@@ -3,9 +3,13 @@ package com.sychev.calenwidget
 import android.content.ContentUris
 import android.content.Context
 import android.provider.CalendarContract
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Calendar
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class CalendarRepository(private val context: Context) {
+@Singleton
+class CalendarRepository @Inject constructor(@ApplicationContext private val context: Context) {
 
     private val MAX_EVENTS_COUNT = 10
     private val PROJECTION = arrayOf(
