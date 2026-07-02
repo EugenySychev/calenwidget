@@ -32,8 +32,8 @@ class CalendarRepository @Inject constructor(@ApplicationContext private val con
         CalendarContract.Calendars.CALENDAR_COLOR
     )
 
-    fun getCalendars(): List<CalendarInfo> {
-        val calendars = mutableListOf<CalendarInfo>()
+    fun getCalendars(): Set<CalendarInfo> {
+        val calendars = mutableSetOf<CalendarInfo>()
         val cursor = context.contentResolver.query(
             CalendarContract.Calendars.CONTENT_URI,
             CALENDARS_PROJECTION,

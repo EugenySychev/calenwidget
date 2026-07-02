@@ -27,6 +27,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
@@ -37,32 +40,25 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.glance.appwidget.updateAll
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.sychev.calenwidget.CalendarWidget
+import com.sychev.calenwidget.CalendarInfo
 import com.sychev.calenwidget.CalendarWidgetReceiver
 import com.sychev.calenwidget.R
-import com.sychev.calenwidget.WidgetPrefs
 import com.sychev.calenwidget.ui.theme.CalenwidgetTheme
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @AndroidEntryPoint
@@ -102,12 +98,16 @@ class MainActivity : ComponentActivity() {
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         if (calendarPermissionGranted) {
-                            WidgetSettings(uiState.widgetParams)
+                            WidgetSettings(uiState.widgetParams, viewModel::onActions)
                             Spacer(
                                 modifier = Modifier
                                     .height(
                                         dimensionResource(R.dimen.spacer_height),
                                     ),
+                            )
+                            CalendarList(
+                                uiState.calendars,
+                                viewModel::onActions,
                             )
                             HorizontalDivider()
                             Spacer(
@@ -156,17 +156,35 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun CalendarList(
+        calendars: List<CalendarInfo>,
+        onActions: (MainActivityActions) -> Unit,
+    ) {
+        val lazyListState = rememberLazyListState()
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            state = lazyListState,
+        ) {
+            items(
+                items = calendars,
+                key = { item -> item.id }
+            ) { item ->
+                Text(
+                    text = item.displayName
+                )
+            }
+        }
+
+    }
+
+    @Composable
     private fun WidgetSettings(
         widgetParams: WidgetParams,
+        onActions: (MainActivityActions) -> Unit = {},
     ) {
-        val context = LocalContext.current
-        val scope = rememberCoroutineScope()
         var isExpanded by remember { mutableStateOf(false) }
-
-        var fontSize by remember { mutableIntStateOf(WidgetPrefs.getFontSize(context))}
-        var bgAlpha by remember { mutableFloatStateOf(WidgetPrefs.getBackgroundAlpha(context)) }
-        var bgColorArgb by remember { mutableIntStateOf(WidgetPrefs.getBackgroundColor(context)) }
-        var textColorArgb by remember { mutableIntStateOf(WidgetPrefs.getTextColor(context)) }
 
         val presetBgColors = listOf(
             Color.Black,
@@ -240,7 +258,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         presetBgColors.forEach { color ->
-                            val isSelected = bgColorArgb == color.toArgb()
+                            val isSelected = widgetParams.bgColorArgb == color.toArgb()
                             Box(
                                 modifier = Modifier
                                     .size(40.dp)
@@ -252,9 +270,7 @@ class MainActivity : ComponentActivity() {
                                         shape = CircleShape
                                     )
                                     .clickable {
-                                        bgColorArgb = color.toArgb()
-                                        WidgetPrefs.setBackgroundColor(context, color.toArgb())
-                                        scope.launch { CalendarWidget().updateAll(context) }
+                                        onActions(MainActivityActions.UpdateBackgroundColor(color.toArgb()))
                                     }
                             )
                         }
@@ -263,32 +279,28 @@ class MainActivity : ComponentActivity() {
                     Text(
                         text = stringResource(
                             R.string.bg_alpha_label,
-                            (bgAlpha * 100).roundToInt()
+                            (widgetParams.bgAlpha * 100).roundToInt()
                         ),
                         modifier = Modifier.fillMaxWidth()
                     )
                     Slider(
-                        value = bgAlpha,
-                        onValueChange = { bgAlpha = it },
-                        onValueChangeFinished = {
-                            WidgetPrefs.setBackgroundAlpha(context, bgAlpha)
-                            scope.launch { CalendarWidget().updateAll(context) }
+                        value = widgetParams.bgAlpha,
+                        onValueChange = {
+                            onActions(MainActivityActions.UpdateBackgroundAlpha(it))
                         },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = stringResource(R.string.font_size_label, fontSize),
+                        text = stringResource(R.string.font_size_label, widgetParams.fontSize),
                         modifier = Modifier.fillMaxWidth()
                     )
                     Slider(
-                        value = fontSize.toFloat() / 100,
+                        value = widgetParams.fontSize.toFloat() / 100,
                         valueRange = fontSizesRange,
                         steps = fontSizesSteps.toInt(),
-                        onValueChange = { fontSize = (it * 100).toInt() },
-                        onValueChangeFinished = {
-                            WidgetPrefs.setFontSize(context, fontSize)
-                            scope.launch { CalendarWidget().updateAll(context) }
+                        onValueChange = {
+                            onActions(MainActivityActions.UpdateFontSize((it * 100).toInt()))
                         },
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -303,7 +315,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         presetColors.forEach { color ->
-                            val isSelected = textColorArgb == color.toArgb()
+                            val isSelected = widgetParams.textColorArgb == color.toArgb()
                             Box(
                                 modifier = Modifier
                                     .size(40.dp)
@@ -315,9 +327,7 @@ class MainActivity : ComponentActivity() {
                                         shape = CircleShape
                                     )
                                     .clickable {
-                                        textColorArgb = color.toArgb()
-                                        WidgetPrefs.setTextColor(context, color.toArgb())
-                                        scope.launch { CalendarWidget().updateAll(context) }
+                                        onActions(MainActivityActions.UpdateTextColor(color.toArgb()))
                                     }
                             )
                         }

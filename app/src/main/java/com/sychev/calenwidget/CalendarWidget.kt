@@ -35,6 +35,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import com.sychev.calenwidget.ui.main.MainActivity
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -42,6 +43,7 @@ import dagger.hilt.components.SingletonComponent
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import javax.inject.Inject
 
 const val LOG = "Widget"
 
@@ -59,6 +61,7 @@ private interface CalendarWidgetEntryPoint {
 class CalendarWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val widgetPrefs = WidgetPrefs(context)
         val calendarRepository = EntryPointAccessors.fromApplication(
             context.applicationContext,
             CalendarWidgetEntryPoint::class.java
@@ -67,10 +70,10 @@ class CalendarWidget : GlanceAppWidget() {
         val events = calendarRepository.getEvents()
             .filter { it.calendarId in visibleCalendarIds }
             .take(CalendarRepository.MAX_EVENTS_COUNT)
-        val bgAlpha = WidgetPrefs.getBackgroundAlpha(context)
-        val bgColorArgb = WidgetPrefs.getBackgroundColor(context)
-        val textColorArgb = WidgetPrefs.getTextColor(context)
-        val fontSize = WidgetPrefs.getFontSize(context)
+        val bgAlpha = widgetPrefs.getBackgroundAlpha()
+        val bgColorArgb = widgetPrefs.getBackgroundColor()
+        val textColorArgb = widgetPrefs.getTextColor()
+        val fontSize = widgetPrefs.getFontSize()
         provideContent {
             WidgetContent(events, bgAlpha, bgColorArgb, textColorArgb, fontSize)
         }
@@ -83,7 +86,6 @@ class UpdateWidgetAction : ActionCallback {
         glanceId: GlanceId,
         parameters: ActionParameters
     ) {
-        Log.d(LOG, "Widget action")
         CalendarWidget().updateAll(context)
     }
 }
@@ -169,7 +171,7 @@ private fun DateGroupHeader(date: Date, textColor: ColorProvider, fontSize: Int)
 @Composable
 private fun EventRow(event: CalendarEvent, textColor: ColorProvider, fontSize: Int) {
     val context = LocalContext.current
-    val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
+    val timeFmt = SimpleDateFormat("HH:mm", context.resources.configuration.locales[0])
     val timeStr = if (event.allDay) context.getString(R.string.all_day)
     else "${timeFmt.format(Date(event.startTime))} – ${timeFmt.format(Date(event.endTime))}"
 

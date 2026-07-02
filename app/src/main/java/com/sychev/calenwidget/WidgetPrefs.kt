@@ -1,19 +1,23 @@
 package com.sychev.calenwidget
 
 import android.content.Context
-import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import javax.inject.Inject
 
-object WidgetPrefs {
-    private const val PREFS_NAME = "widget_prefs"
-    private const val KEY_BG_ALPHA = "bg_alpha"
-    private const val KEY_TEXT_COLOR = "text_color"
-    private const val KEY_FONT_SIZE = "font_size"
-    private const val KEY_SELECTED_CALENDARS = "selected_calendars"
+private const val PREFS_NAME = "widget_prefs"
+private const val KEY_BG_ALPHA = "bg_alpha"
+private const val KEY_TEXT_COLOR = "text_color"
+private const val KEY_FONT_SIZE = "font_size"
+private const val KEY_SELECTED_CALENDARS = "selected_calendars"
+private const val KEY_BG_COLOR = "bg_color"
 
-    fun getBackgroundAlpha(context: Context): Float =
+class WidgetPrefs @Inject constructor(
+    @ApplicationContext private val context: Context,
+) {
+    fun getBackgroundAlpha(): Float =
         context
             .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getFloat(KEY_BG_ALPHA, 0.75f)
@@ -26,7 +30,7 @@ object WidgetPrefs {
             }
     }
 
-    fun getFontSize(context: Context): Int =
+    fun getFontSize(): Int =
         context
             .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getInt(KEY_FONT_SIZE, 12 )
@@ -38,7 +42,7 @@ object WidgetPrefs {
                 putInt(KEY_FONT_SIZE, size)
             }
     }
-    fun getTextColor(context: Context): Int =
+    fun getTextColor(): Int =
         context
             .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getInt(KEY_TEXT_COLOR, 0xFFFFFFFF.toInt())
@@ -49,7 +53,7 @@ object WidgetPrefs {
             .edit { putInt(KEY_TEXT_COLOR, colorArgb) }
     }
 
-    fun getBackgroundColor(context: Context): Int =
+    fun getBackgroundColor(): Int =
         context
             .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getInt(KEY_BG_COLOR, 0xFF000000.toInt())
@@ -62,16 +66,14 @@ object WidgetPrefs {
             }
     }
 
-    private const val KEY_BG_COLOR = "bg_color"
-
-    fun getSelectedCalendars(context: Context): Set<CalendarInfo> {
+    fun getSelectedCalendars(): List<CalendarInfo> {
         val json = context
             .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getString(KEY_SELECTED_CALENDARS, null) ?: return emptySet()
+            .getString(KEY_SELECTED_CALENDARS, null) ?: return emptyList()
         return Json.decodeFromString(json)
     }
 
-    fun setSelectedCalendars(context: Context, calendars: Set<CalendarInfo>) {
+    fun setSelectedCalendars(context: Context, calendars: List<CalendarInfo>) {
         context
             .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit {

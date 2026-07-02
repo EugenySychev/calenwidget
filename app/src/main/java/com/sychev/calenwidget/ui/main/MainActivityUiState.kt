@@ -11,5 +11,10 @@ data class WidgetParams(
 
 internal data class MainActivityUiState(
     val calendars: List<CalendarInfo> = emptyList(),
-    val widgetParams: WidgetParams,
+    val widgetParams: WidgetParams = WidgetParams(
+        fontSize = 13,
+        bgAlpha = 0.5f,
+        bgColorArgb = 0,
+        textColorArgb = 0,
+    ),
 )
